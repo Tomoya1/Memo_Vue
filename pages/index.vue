@@ -1,14 +1,21 @@
 <template>
-  <section class="container">
+  <section
+    class="container"
+    @mouseup="dragEnd"
+    @mousemove="dragging"
+  >
     <div>
       <memo
-        v-for="(memoInfo, i) in memoInfoList"
+        v-for="(memoInfo, i) in $store.state.memoInfoList"
         :key="i"
         :posX="memoInfo.posX"
         :posY="memoInfo.posY"
+        :text="memoInfo.text"
+        :index="i"
+        @dragStart="dragStart(i, $event)"
       />
     </div>
-    <add-btn @clicked="addMemo" />
+    <add-btn @clicked="$store.commit('addMemo')" />
   </section>
 </template>
 
@@ -23,31 +30,40 @@ export default {
   },
   data() {
     return {
-      memoInfoList: [
-        {
-          posX: 20,
-          posY: 20
-        }
-      ]
+      isDragging: false,
+      // ドラックしたメモのkeyId
+      draggingIndex: null,
+      prevX: null,
+      prevY: null
     }
   },
   methods: {
-    addMemo() {
-      // メモを追加するアルゴリズム
-      const lastMemo = this.memoInfoList[this.memoInfoList.length - 1]
-      this.memoInfoList = [
-        ...this.memoInfoList,
-        {
-          posX: lastMemo.posX + 220,
-          posY: lastMemo.posY + 20
-        }
-      ]
+    dragStart(i, $event) {
+      this.isDragging = true
+      this.draggingIndex = i
+      this.prevX = $event.pageX
+      this.prevY = $event.pageY
+    },
+    dragEnd() {
+      this.isDragging = false
+      this.draggingIndex = null
+    },
+    dragging($event) {
+      if (!this.isDragging) return
+      this.$store.commit('dragMemo', {
+        index: this.draggingIndex,
+        deltaX: $event.pageX - this.prevX,
+        deltaY: $event.pageY - this.prevY
+      })
+      // 直前の値をセーブする
+      this.prevX = $event.pageX
+      this.prevY = $event.pageY
     }
   }
 }
 </script>
 
-<style>
+<style scoped>
 .container {
   margin: 0 auto;
   min-height: 100vh;
